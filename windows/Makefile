@@ -7,3 +7,6 @@ server:
 
 client:
 	g++ klog_main.cpp -o klog_main.exe $(CFlags)
+
+clean:
+	rm -f *.exe
