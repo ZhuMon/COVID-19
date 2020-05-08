@@ -1,4 +1,4 @@
-CFlags = -lws2_32
+CFlags = -lws2_32 -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic
 
 all: server client
 
