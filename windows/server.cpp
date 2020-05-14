@@ -4,7 +4,6 @@
 #include <process.h>
 
 #define BUFFERSIZE 1000
-#define IPADDRESS "192.168.0.112"
 
 SOCKET server_sockfd, client_sockfd;
 void ClientMessage(void* p);
@@ -54,7 +53,7 @@ int main()
     //     unsigned long int s_addr;
     // };
     server_address.sin_family = AF_INET;  // AF_INT(使用IPv4)
-    server_address.sin_addr.s_addr = inet_addr("10.1.2.233");  // 設定IP位址
+    server_address.sin_addr.s_addr = inet_addr(SERVER_IP);  // 設定IP位址
     server_address.sin_port = 80;                              //設定埠號
     server_len = sizeof(server_address);
 
