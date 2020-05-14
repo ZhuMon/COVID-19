@@ -1,3 +1,4 @@
+#include <Ws2tcpip.h>
 #include <stdio.h>
 #include <winsock2.h>
 #include <process.h>
@@ -11,8 +12,15 @@ void ClientMessage(void* p);
 int main()
 {
     int server_len, client_len;
+
+#ifdef IPV4
     struct sockaddr_in server_address;
     struct sockaddr_in client_address;
+#endif
+#ifdef IPV6
+    struct sockaddr_in6 server_address;
+    struct sockaddr_in6 client_address;
+#endif
 
     // 註冊 Winsock DLL
     WSADATA wsadata;
@@ -22,9 +30,16 @@ int main()
     }
 
     // 產生 server socket
-    server_sockfd = socket(
-        AF_INET, SOCK_STREAM,
-        0);  // AF_INET(使用IPv4); SOCK_STREAM; 0(使用預設通訊協定，即TCP)
+    // AF_INET(使用IPv4); SOCK_STREAM; 0(使用預設通訊協定，即TCP)
+#ifdef IPV4
+    server_sockfd = socket(AF_INET, SOCK_STREAM, 0);
+#endif
+
+#ifdef IPV6
+    server_sockfd = socket(AF_INET6, SOCK_STREAM, 0);
+#endif
+
+
     if (server_sockfd == SOCKET_ERROR) {
         printf("Socket Error\n");
         exit(1);
@@ -39,7 +54,7 @@ int main()
     //     unsigned long int s_addr;
     // };
     server_address.sin_family = AF_INET;  // AF_INT(使用IPv4)
-    server_address.sin_addr.s_addr = inet_addr(IPADDRESS);  // 設定IP位址
+    server_address.sin_addr.s_addr = inet_addr("10.1.2.233");  // 設定IP位址
     server_address.sin_port = 80;                              //設定埠號
     server_len = sizeof(server_address);
 
@@ -74,8 +89,8 @@ int main()
 
         send(client_sockfd, buf, BUFFERSIZE, 0);
     }
-    
-    
+
+
 
     printf("END....");
     closesocket(client_sockfd);

