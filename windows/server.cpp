@@ -1,12 +1,14 @@
 #include <Ws2tcpip.h>
 #include <stdio.h>
 #include <winsock2.h>
+#include <iostream>
 #include <process.h>
 
 #define BUFFERSIZE 1000
 
 SOCKET server_sockfd, client_sockfd;
 void ClientMessage(void* p);
+void recvFile(char* filepath);
 
 int main()
 {
@@ -100,6 +102,38 @@ void ClientMessage(void* p){
     char buf[BUFFERSIZE + 1];
     while ((rVal = recv(client_sockfd, buf, BUFFERSIZE, 0)) > 0) {
         buf[rVal] = 0x00;
-        printf("[Client] >> %s\n", buf);
+        if(strcmp(buf, "#screenshot") == 0) {
+            char filename[40] = SCREENSHOTPATH;
+            recvFile(filename);
+
+        } else {
+            printf("[Client] >> %s\n", buf);
+        }
     }
+}
+
+void recvFile(char* filepath)
+{
+    char imgBuf[FILEBLOCKSIZE];
+
+    int ret, byterecv;
+    int err;
+    FILE *ptrFile;
+    ptrFile = fopen(filepath, "wb");
+
+    byterecv = 0;
+
+    do {
+        ret = recv(client_sockfd, imgBuf, FILEBLOCKSIZE, 0);
+        if(strcmp(imgBuf, "#END") == 0){
+            break;
+        }
+        byterecv += ret;
+        fwrite(imgBuf, sizeof(char), ret, ptrFile);
+    } while (ret > 0);
+
+    fclose(ptrFile);
+
+    printf("[ Stored at: %s ]\n", filepath);
+    printf("[ %d byte received. ]\n", byterecv);
 }
