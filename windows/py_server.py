@@ -50,11 +50,11 @@ def organize_data():
                 continue
 
             # header
-            print(v)
             if h_or_d[local_d_count] == "0":
+                v = v.replace('\\', '\\\\\\\\')
                 j = json.loads(v)
-                window_name = v["window"]
-                data_time = v["time"]
+                window_name = j["window"]
+                data_time = j["time"]
                 
             # data
             else:
