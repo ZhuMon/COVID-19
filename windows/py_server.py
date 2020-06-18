@@ -4,11 +4,15 @@ import json
 import time
 import threading
 from json2html import *
+import enchant
+import requests
 
 all_data = []
 d_count = 0
 win_val_dict = {}
 h_or_d = "" # 0 for header, 1 for data
+en_dict = enchant.Dict("en_US")
+
 @route("/put_data", method="POST")
 def put_data():
     global all_data
@@ -74,6 +78,20 @@ def organize_data():
             local_d_count += 1
 
 
+def check_syntax(text, is_word_thr=3):
+    correct_count = 0
+
+    threads = []
+    for word_len in range(3, 10):
+        for begin_char in range(2, len(text)-word_len):
+            word = text[begin_char:begin_char+word_len]
+            if en_dict.check(word) and len(word) > 1:
+                correct_count += 1
+
+    if correct_count > len(text)/is_word_thr:
+        return True
+    else:
+        return False
 
 def transfer_data(content):
     # find [#B]
@@ -83,6 +101,18 @@ def transfer_data(content):
         output = output[0:b_start-1] + output[b_start:]
         output = output.replace("[#B]", "", 1)
         b_start = output.find("[#B]")
+
+    if not check_syntax(output):
+        # it may include chinese
+        a = output.replace(" ", "%3D")
+        url = f"https://www.google.com/inputtools/request?text={a}&ime=zh-hant-t-i0"
+
+        r = requests.get(url)
+        j = json.loads(r.text)
+        if "SUCCESS" in j:
+            output = j[1][0][1]
+
+
     return output
 
 
