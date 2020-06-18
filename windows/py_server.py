@@ -1,7 +1,9 @@
 from bottle import route, run, request, abort, static_file
-import json
 import re
+import json
+import time
 import threading
+from json2html import *
 
 all_data = []
 d_count = 0
@@ -61,8 +63,8 @@ def organize_data():
                 if window_name not in win_val_dict.keys():
                     win_val_dict[window_name] = [{"time": data_time, "data": v}]
                 else: 
-                    if data_time > win_val_dict[window_name][-1]["time"] + 300:
-                        win_val_dict[window_name] += {"time": data_time, "data": v}
+                    if data_time > win_val_dict[window_name][-1]["time"] + 30:
+                        win_val_dict[window_name].append({"time": data_time, "data": v})
                     else:
                         win_val_dict[window_name][-1]["data"] += v
    
@@ -87,13 +89,40 @@ def transfer_data(content):
 @route("/show", method="GET")
 def show_data():
     # TODO: only administrator can view
-    output_content = ""
+    new_dict = {}
+    for k,v in win_val_dict.items():
+        if k == '':
+            continue
+        new_dict[k] = []
+        
+        for i in v:
+            if type(i) == dict:
+                tmp = i.copy()
+                tmp["time"] = time.asctime(time.localtime(tmp["time"]))
+                new_dict[k].append(tmp)
 
-    return str(win_val_dict)
-    
+    return json2html.convert(json = new_dict)
+
+@route("/show_decode", method="GET")
+def decode_data():
+    new_dict = {}
+    for k,v in win_val_dict.items():
+        if k == '':
+            continue
+        new_dict[k] = []
+        
+        for i in v:
+            if type(i) == dict:
+                tmp = i.copy()
+                tmp["time"] = time.asctime(time.localtime(tmp["time"]))
+                new_dict[k].append(tmp)
+                tmp["data"] = transfer_data(tmp["data"])
+
+    return json2html.convert(json = new_dict)
+
 @route("/get_data", method="GET")
 def get_data():
-    return "get_data"
+    return str(win_val_dict)
 
 if __name__ == "__main__":
     #run(host="127.0.0.1", port=8081, debug=True)
