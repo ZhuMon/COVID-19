@@ -1,4 +1,5 @@
 SERVER_IP = \"127.0.0.1\"
+HOST = \"http://localhost\"
 PORT = 8081
 FILEBLOCKSIZE = 128
 SCREENSHOTPATH = \"C:^\^\Users^\richard^\Desktop^\Hello.bmp\"
@@ -10,7 +11,7 @@ IP_VERSION = IPV4
 Visibility = visible
 
 CDefine = -D ${IP_VERSION} -D ${Visibility}
-CDefine += -D SERVER_IP=${SERVER_IP} -D PORT=${PORT} -D FILEBLOCKSIZE=${FILEBLOCKSIZE} -D SCREENSHOTPATH=${SCREENSHOTPATH}
+CDefine += -D SERVER_IP=${SERVER_IP} -D PORT=${PORT} -D FILEBLOCKSIZE=${FILEBLOCKSIZE} -D SCREENSHOTPATH=${SCREENSHOTPATH} -D HOST=${HOST}
 
 CFlags = -lws2_32 -static-libgcc -static-libstdc++ -Wl,-Bstatic -lstdc++ -lpthread -Wl,-Bdynamic -lgdi32 ${CDefine}
 
